@@ -1,73 +1,95 @@
-import React from 'react';
-import type { EditorView } from 'codemirror';
 import { Decoration, type DecorationSet, ViewPlugin, type ViewUpdate, WidgetType } from '@codemirror/view';
-import { RangeSetBuilder } from '@codemirror/state';
-const variableRegex = /<%=\s*([^%>]*)\s*%>/g;
+import type { Range } from '@codemirror/state';
+import { EditorView } from 'codemirror';
 
-// Create a widget type for template variables
-class TemplateVariableWidget extends WidgetType {
-  constructor(readonly content: string) {
+const variableRegex = /<%=\s*([^%>]+)\s*%>/g;
+
+// Theme styles for the variables
+export const variableTheme = {
+  '.cm-variable-template': {
+    background: '#e6f7ff',
+    borderRadius: '3px',
+    padding: '0 2px',
+    color: '#1890ff',
+    fontWeight: 'bold',
+    border: '1px solid #91d5ff',
+    display: 'inline-block', // Make it behave as a block
+  }
+};
+
+// Widget that represents a non-editable variable
+class VariableWidget extends WidgetType {
+  constructor(readonly text: string, readonly variableName: string) {
     super();
   }
 
-  toDOM() {
-    const span = document.createElement('span');
-    span.className = 'template-variable';
-    span.textContent = this.content;
-    return span;
+  eq(other: VariableWidget): boolean {
+    return other.text === this.text && other.variableName === this.variableName;
   }
 
-  eq(other: TemplateVariableWidget) {
-    return other.content === this.content;
+  toDOM(): HTMLElement {
+    const element = document.createElement('span');
+    element.className = 'cm-variable-template';
+    element.textContent = this.variableName;
+    // Make the element non-selectable
+    element.style.userSelect = 'none';
+    element.style.margin = '0 2px';
+    return element;
   }
 
-  ignoreEvent() {
+  ignoreEvent(): boolean {
     return false;
   }
 }
 
-export const variableDecorations = ViewPlugin.fromClass(class {
-  decorations: DecorationSet;
-  
-  constructor(view: EditorView) {
-    this.decorations = this.buildDecorations(view);
-  }
-  
-  update(update: ViewUpdate) {
-    if (update.docChanged || update.viewportChanged) {
-      this.decorations = this.buildDecorations(update.view);
-    }
-  }
-  
-  buildDecorations(view: EditorView) {
-    const builder = new RangeSetBuilder<Decoration>();
-    const content = view.state.doc.toString();
-    
-    for (const match of content.matchAll(variableRegex)) {
-      const start = match.index!;
-      const end = start + match[0].length;
-      const varContent = match[1].trim();
-      
-      // Create a widget decoration that replaces <%= xxx %> with just xxx
-      const decoration = Decoration.replace({
-        widget: new TemplateVariableWidget(varContent)
-      });
-      
-      builder.add(start, end, decoration);
-    }
-    
-    return builder.finish();
-  }
-}, {
-  decorations: v => v.decorations
-});
+// Create a decoration for variables
+export const variableDecorations = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet;
 
-export const variableTheme = {
-  '.template-variable': {
-    backgroundColor: '#d8d2fc',
-    padding: '3px 8px',
-    margin: '2px',
-    borderRadius: '4px',
-    fontSize: '12px',
+    constructor(view: EditorView) {
+      this.decorations = this.buildDecorations(view);
+    }
+
+    update(update: ViewUpdate) {
+      if (update.docChanged || update.viewportChanged) {
+        this.decorations = this.buildDecorations(update.view);
+      }
+    }
+
+    buildDecorations(view: EditorView) {
+      const decorations: Range<Decoration>[] = [];
+      const content = view.state.doc.toString();
+      
+      // Find all variable occurrences
+      let match: RegExpExecArray | null;
+      variableRegex.lastIndex = 0; // Reset regex index
+      // biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
+      while ((match = variableRegex.exec(content)) !== null) {
+        const start = match.index;
+        const end = start + match[0].length;
+        const fullMatch = match[0];
+        const variableName = match[1].trim();
+        
+        // Create a replacement decoration with a widget
+        decorations.push(
+          Decoration.replace({
+            widget: new VariableWidget(fullMatch, variableName),
+            inclusive: false, // Don't include in selection
+            block: false, // This is an inline widget
+            side: 1 // Bias to the right, helps with cursor positioning
+          }).range(start, end)
+        );
+      }
+      
+      return Decoration.set(decorations);
+    }
+  },
+  {
+    decorations: v => v.decorations,
+    // variable decorations are atomic, so they don't need to be recomputed when the viewport changes
+    provide: plugin => EditorView.atomicRanges.of(view => {
+      return view.plugin(plugin)?.decorations || Decoration.none;
+    })
   }
-}
+);

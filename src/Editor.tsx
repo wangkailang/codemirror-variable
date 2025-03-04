@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { EditorView, basicSetup } from 'codemirror';
-import { Decoration, type DecorationSet } from '@codemirror/view';
+import { EditorView, minimalSetup } from 'codemirror';
 import { EditorState } from '@codemirror/state';
 import { variableDecorations, variableTheme } from './variable-decoration';
 
@@ -43,7 +42,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ initialValue, onChange 
     const state = EditorState.create({
       doc: initialValue,
       extensions: [
-        basicSetup,
+        minimalSetup,
         variableDecorations,
         EditorView.theme(variableTheme),
         EditorView.updateListener.of((update) => {
@@ -119,7 +118,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ initialValue, onChange 
         to,
         insert: variableText
       },
-      // Optionally: Position cursor inside the variable
+      // Position cursor after the inserted variable
       selection: {
         anchor: from + variableText.length,
         head: from + variableText.length
