@@ -44,7 +44,6 @@ export const variableDecorations = ViewPlugin.fromClass(class {
     const content = view.state.doc.toString();
     
     for (const match of content.matchAll(variableRegex)) {
-      console.log('match:', match);
       const start = match.index!;
       const end = start + match[0].length;
       const varContent = match[1].trim();
