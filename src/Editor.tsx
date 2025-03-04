@@ -6,6 +6,7 @@ import { variableDecorations, variableTheme } from './variable-decoration';
 interface TemplateEditorProps {
   initialValue: string;
   onChange?: (value: string) => void;
+  mode?: 'template' | 'variable';
 }
 
 interface MenuPosition {
@@ -28,7 +29,7 @@ const menus = [
   }
 ];
 
-const TemplateEditor: React.FC<TemplateEditorProps> = ({ initialValue, onChange }) => {
+const TemplateEditor: React.FC<TemplateEditorProps> = ({ initialValue, onChange, mode = 'template' }) => {
   const editorRef = React.useRef<HTMLDivElement>(null);
   const viewRef = React.useRef<EditorView | null>(null);
   const initialValueRef = React.useRef(initialValue);
@@ -43,7 +44,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ initialValue, onChange 
       doc: initialValue,
       extensions: [
         minimalSetup,
-        variableDecorations,
+        variableDecorations(mode),
         EditorView.theme(variableTheme),
         EditorView.updateListener.of((update) => {
           if (update.docChanged || update.selectionSet) {
@@ -107,11 +108,11 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ initialValue, onChange 
     const selection = viewRef.current.state.selection.main;
     const cursorPos = selection.empty ? selection.from : selection.from;
 
-    const variableText = `<%= ${value} %>`;
+    const variableText = mode === 'template' ?  `<%= ${value} %>` : `{{${value}}}`;
     const from = clearSlash ? cursorPos - 1 : cursorPos;
     const to = cursorPos;
 
-    // Insert <%= xxx %> at cursor position
+    // Insert variable at cursor position
     viewRef.current.dispatch({
       changes: {
         from,
@@ -130,7 +131,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ initialValue, onChange 
 
   return (
     <div>
-      <div ref={editorRef} style={{ border: '1px solid #ccc', width: '600px', height: '400px', position: 'relative' }} />
+      <div ref={editorRef} style={{ border: '1px solid #ccc', width: '600px', height: '150px', position: 'relative' }} />
       {menuVisible && menuPosition && (
         <ul
         style={{
@@ -158,7 +159,6 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ initialValue, onChange 
         ))}
       </ul>
       )}
-      <button onClick={() => insertTemplateVariable('xxx')}>+</button>
     </div>
   );
 };

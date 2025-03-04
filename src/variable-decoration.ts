@@ -2,8 +2,6 @@ import { Decoration, type DecorationSet, ViewPlugin, type ViewUpdate, WidgetType
 import type { Range } from '@codemirror/state';
 import { EditorView } from 'codemirror';
 
-const variableRegex = /<%=\s*([^%>]+)\s*%>/g;
-
 // Theme styles for the variables
 export const variableTheme = {
   '.cm-variable-template': {
@@ -43,7 +41,7 @@ class VariableWidget extends WidgetType {
 }
 
 // Create a decoration for variables
-export const variableDecorations = ViewPlugin.fromClass(
+export const variableDecorations = (mode: 'template' | 'variable') => ViewPlugin.fromClass(
   class {
     decorations: DecorationSet;
 
@@ -60,6 +58,7 @@ export const variableDecorations = ViewPlugin.fromClass(
     buildDecorations(view: EditorView) {
       const decorations: Range<Decoration>[] = [];
       const content = view.state.doc.toString();
+      const variableRegex = mode === 'template' ?  /<%=\s*([^%>]+)\s*%>/g : /{{\s*([^}]+)\s*}}/g;
       
       // Find all variable occurrences
       let match: RegExpExecArray | null;

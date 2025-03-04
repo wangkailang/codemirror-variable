@@ -9,3 +9,8 @@ This is a simple variable editor for codemirror. It allows you to edit variables
   <%= variable %>
   ```
 
+- variables is supported.
+  ```
+  {{variable}}
+  ```
+
