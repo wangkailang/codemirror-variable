@@ -121,8 +121,8 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ initialValue, onChange 
       },
       // Optionally: Position cursor inside the variable
       selection: {
-        anchor: from + 4,
-        head: from + 4 + value.length
+        anchor: from + variableText.length,
+        head: from + variableText.length
       }
     });
     // Focus the editor after insertion
