@@ -4,7 +4,7 @@ import { EditorView } from 'codemirror';
 
 // Theme styles for the variables
 export const variableTheme = {
-  '.cm-variable-template': {
+  '.cm-variable': {
     background: '#e6f7ff',
     borderRadius: '3px',
     padding: '0 2px',
@@ -14,12 +14,23 @@ export const variableTheme = {
     display: 'inline-block', // Make it behave as a block
     useSelect: 'none', // Make it non-selectable
     margin: '0 2px', // Add some space between variables
+  },
+  '.cm-variable-invalid': {
+    borderRadius: '3px',
+    padding: '0 2px',
+    fontWeight: 'bold',
+    border: '1px solid #91d5ff',
+    display: 'inline-block', // Make it behave as a block
+    useSelect: 'none', // Make it non-selectable
+    margin: '0 2px', // Add some space between variables
+    background: '#fff1f0',
+    color: '#f5222d',
   }
 };
 
 // Widget that represents a non-editable variable
 class VariableWidget extends WidgetType {
-  constructor(readonly variableName: string) {
+  constructor(readonly variableName: string, readonly isValid: boolean) {
     super();
   }
 
@@ -29,7 +40,11 @@ class VariableWidget extends WidgetType {
 
   toDOM(): HTMLElement {
     const element = document.createElement('span');
-    element.className = 'cm-variable-template';
+    if (!this.isValid) {
+      element.className = 'cm-variable-invalid';
+    } else {
+      element.className = 'cm-variable';
+    }
     element.textContent = this.variableName;
     return element;
   }
@@ -39,28 +54,36 @@ class VariableWidget extends WidgetType {
   }
 }
 
-const variableMatcher = (mode: 'template' | 'variable') => {
+const variableMatcher = (mode: 'template' | 'variable', variables?: Record<string, string>) => {
   const variableRegex = mode === 'template' ?  /<%=\s*([^%>]+)\s*%>/g : /{{\s*([^}]+)\s*}}/g;
   return new MatchDecorator({
     regexp: variableRegex,
-    decoration: match => Decoration.replace({
-      widget: new VariableWidget(match[1]),
-    })
+    decoration: match => {
+      const trimMatch1 = match[1].trim();
+      const isValid = !!variables && variables[trimMatch1] !== undefined;
+      return Decoration.replace({
+        widget: new VariableWidget(trimMatch1, isValid),
+      })
+    }
   })
 }
 
 // Create a decoration for variables
-export const variableDecorations = (mode: 'template' | 'variable') => ViewPlugin.fromClass(
+export const variableDecorations = (mode: 'template' | 'variable', variables?: Record<string, string>) => ViewPlugin.fromClass(
   class {
     decorations: DecorationSet;
 
+    get matcher() {
+      return variableMatcher(mode, variables);
+    }
+
     constructor(view: EditorView) {
-      this.decorations = variableMatcher(mode).createDeco(view);
+      this.decorations = this.matcher.createDeco(view);
     }
 
     update(update: ViewUpdate) {
       if (update.docChanged || update.viewportChanged) {
-        this.decorations = variableMatcher(mode).updateDeco(update, this.decorations);
+        this.decorations = this.matcher.updateDeco(update, this.decorations);
       }
     }
   },

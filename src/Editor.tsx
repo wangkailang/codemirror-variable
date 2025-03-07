@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { EditorView, minimalSetup } from 'codemirror';
 import { EditorState } from '@codemirror/state';
 import { variableDecorations, variableTheme } from './variable-decoration';
@@ -7,6 +7,7 @@ interface TemplateEditorProps {
   initialValue: string;
   onChange?: (value: string) => void;
   mode?: 'template' | 'variable';
+  variables?: Record<string, string>;
 }
 
 interface MenuPosition {
@@ -14,28 +15,22 @@ interface MenuPosition {
   left: number;
 }
 
-const menus = [
-  {
-    label: "Option 1",
-    value: "option1"
-  },
-  {
-    label: "Option 2",
-    value: "option2"
-  },
-  {
-    label: "Option 3",
-    value: "option3"
-  }
-];
-
-const TemplateEditor: React.FC<TemplateEditorProps> = ({ initialValue, onChange, mode = 'template' }) => {
+const TemplateEditor: React.FC<TemplateEditorProps> = ({ initialValue, onChange, mode = 'template', variables }) => {
   const editorRef = React.useRef<HTMLDivElement>(null);
   const viewRef = React.useRef<EditorView | null>(null);
   const initialValueRef = React.useRef(initialValue);
 
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
+
+  const menus = useMemo(() => {
+    if (!variables) return [];
+    return Object.keys(variables).map((key) => ({
+      label: variables[key],
+      value: key
+    }));
+  }
+  , [variables]);
 
   React.useEffect(() => {
     if (!editorRef.current) return;
@@ -44,7 +39,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ initialValue, onChange,
       doc: initialValue,
       extensions: [
         minimalSetup,
-        variableDecorations(mode),
+        variableDecorations(mode, variables),
         EditorView.theme(variableTheme),
         EditorView.updateListener.of((update) => {
           if (update.docChanged || update.selectionSet) {

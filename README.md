@@ -18,6 +18,12 @@ This is a simple variable editor for codemirror. It allows you to edit variables
 
 ### slash select variable
 
+Support slash select variable.
+
+### Invalid variable mark
+
+Support invalid variable mark.
+
 ## Example
 
 ![example](./example.png)
