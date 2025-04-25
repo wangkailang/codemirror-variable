@@ -1,7 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { EditorView, minimalSetup } from 'codemirror';
+import { minimalSetup } from 'codemirror';
 import { EditorState } from '@codemirror/state';
 import { variableDecorations, variableTheme } from './variable-decoration';
+import { formula } from './formula/extensions/formula';
+import { EditorView } from '@codemirror/view';
+import { formulaHighlighting } from './formula/extensions/formula-hightlight';
+import { formulaAutocompletion } from './formula/extensions/formula-completion';
+
 
 interface TemplateEditorProps {
   initialValue: string;
@@ -40,6 +45,9 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ initialValue, onChange,
       extensions: [
         minimalSetup,
         variableDecorations(mode, variables),
+        formula(),
+        formulaHighlighting(),
+        formulaAutocompletion(),
         EditorView.theme(variableTheme),
         EditorView.updateListener.of((update) => {
           if (update.docChanged || update.selectionSet) {

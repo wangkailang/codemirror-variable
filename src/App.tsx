@@ -10,13 +10,13 @@ const VARIABLE_DATA = {
 }
 
 function App() {
-  const [temValue, setTemValue] = React.useState("Hello, <%= userName %>,\n<%= age %>");
+  const [temValue, setTemValue] = React.useState("Hello, <%= userName %>,\n<%= age %> \n SUM(1, 2)");
   const handleTemChange = (newValue: string) => {
     console.log(newValue)
     setTemValue(newValue);
   };
 
-  const [varValue, setVarValue] = React.useState("Hello, {{userName}},\n{{age}}");
+  const [varValue, setVarValue] = React.useState("Hello, {{userName}},\n{{age}} \n SUM(1, 2)");
   const handleVarChange = (newValue: string) => {
     console.log(newValue)
     setVarValue(newValue);

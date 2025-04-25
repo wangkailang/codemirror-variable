@@ -1,0 +1,69 @@
+@top Expression { expression }
+
+@skip { whitespace }
+
+expression {
+  Number |
+  String |
+  Boolean |
+  CellRange |
+  CellReference |
+  FunctionCall |
+  BinaryExpression |
+  ParenExpression
+}
+
+FunctionCall {
+  Function "(" (expression ("," expression)*)? ")"
+}
+
+BinaryExpression {
+  expression !plus "+" expression |
+  expression !plus "-" expression |
+  expression !multiply "*" expression |
+  expression !multiply "/" expression |
+  expression !power "^" expression |
+  expression !compare "=" expression |
+  expression !compare ">" expression |
+  expression !compare "<" expression |
+  expression !compare ">=" expression |
+  expression !compare "<=" expression |
+  expression !compare "<>" expression |
+  expression !concat "&" expression
+}
+
+ParenExpression {
+  "(" expression ")"
+}
+
+@tokens {
+  whitespace { @whitespace+ }
+  
+  @precedence {
+    CellRange,
+    Boolean,
+    CellReference,
+    Function
+  }
+  
+  Function { $[A-Z]$[A-Z0-9]* }
+  Boolean { "TRUE" | "FALSE" }
+  CellReference { $[A-Z]+$[0-9]+ }
+  CellRange { CellReference ":" CellReference }
+  Number { $[0-9]+("."$[0-9]+)? }
+  String { '"' (!["\\] | "\\" _)* '"' }
+  
+  "+" "-" "*" "/" "^" "=" ">" "<" ">=" "<=" "<>" "&"
+  "(" ")" ","
+}
+
+@precedence {
+  power @right,
+  prefix,
+  multiply @left,
+  plus @left,
+  compare @left,
+  concat @left
+}
+
+@external propSource formulaHighlighting from "./highlights"
